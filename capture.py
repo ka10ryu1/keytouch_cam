@@ -34,20 +34,16 @@ def command():
 def main(args):
     cap = cv2.VideoCapture(0)
     while(True):
-
         # Capture frame-by-frame
         ret, frame = cap.read()
-        print(ret)
-
         if ret:
-            print(frame.shape)
-            cv2.imwrite('cam.jpg', frame)
             cv2.imshow('frame', frame)
         else:
             time.sleep(2)
 
         # Display the resulting frame
-        if cv2.waitKey(100) == 27:
+        if cv2.waitKey(20) == 27:
+            cv2.imwrite('cam.jpg', frame)
             break
 
     # When everything done, release the capture
