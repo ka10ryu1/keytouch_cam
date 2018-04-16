@@ -8,6 +8,8 @@ import cv2
 import time
 import argparse
 
+import Tools.func as F
+
 
 def command():
     parser = argparse.ArgumentParser(description=help)
@@ -28,6 +30,7 @@ def main(args):
         cap.set(4, 200)
         cap.set(5, 5)
 
+    num = 0
     while(True):
         # Capture frame-by-frame
         ret, frame = cap.read()
@@ -42,8 +45,10 @@ def main(args):
             print('exit!')
             break
         elif key == ord('s'):
-            print('capture!')
-            cv2.imwrite('cam.jpg', frame)
+            name = F.getFilePath(args.out_path, 'cap-'+str(num).zfill(5), '.jpg')
+            num += 1
+            print('capture!', name)
+            cv2.imwrite(name, frame)
 
     # When everything done, release the capture
     cap.release()
@@ -53,6 +58,7 @@ def main(args):
 if __name__ == '__main__':
 
     args = command()
+    F.argsPrint(args)
 
     print('Key bindings')
     print('[Esc] Exit')
