@@ -9,6 +9,8 @@ import time
 import argparse
 import numpy as np
 
+import Tools.func as F
+
 
 def command():
     parser = argparse.ArgumentParser(description=help)
@@ -68,17 +70,17 @@ def alignImages(img1, img2,
 def main(args):
     # Read reference image
     ref_name = args.jpeg[0]
-    print("Reading reference image : ", ref_name)
+    print('Reading reference image : ', ref_name)
     ref = cv2.imread(ref_name, cv2.IMREAD_COLOR)
 
     # Read image to be aligned
     img_name = args.jpeg[1]
-    print("Reading image to align : ", img_name)
+    print('Reading image to align : ', img_name)
     img = cv2.imread(img_name, cv2.IMREAD_COLOR)
 
     num = 1
 
-    print("Aligning images ...")
+    print('Aligning images ...')
     # Registered image will be resotred in imReg.
     # The estimated homography will be stored in h.
     st = time.time()
@@ -99,16 +101,21 @@ def main(args):
         print(time.time() - st)
 
     # Write aligned image to disk.
-    outFilename = "aligned.jpg"
-    print("Saving aligned image : ", outFilename)
-    cv2.imwrite(outFilename, dst)
+    outFileName = F.getFilePath(args.out_path, 'aligned', '.jpg')
+    print('Saving aligned image : ', outFileName)
+    cv2.imwrite(outFileName, dst)
 
     # Print estimated homography
-    print("Estimated homography : \n",  h)
-    np.savez('h.npz', h=h)
+    print('Estimated homography : \n',  h)
+    outFileName = F.getFilePath(args.out_path, 'h', '.npz')
+    np.savez(outFileName, h=h)
+
+    cv2.imshow('view', dst)
+    cv2.waitKey()
 
 
 if __name__ == '__main__':
 
     args = command()
+    F.argsPrint(args)
     main(args)

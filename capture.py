@@ -15,8 +15,8 @@ def command():
     parser = argparse.ArgumentParser(description=help)
     parser.add_argument('--channel', '-c', type=int, default=0,
                         help='使用するWebカメラのチャンネル [default: 0]')
-    parser.add_argument('-o', '--out_path', default='./result/',
-                        help='画像の保存先 (default: ./result/)')
+    parser.add_argument('-o', '--out_path', default='./capture/',
+                        help='画像の保存先 (default: ./capture/)')
     parser.add_argument('--lower', action='store_true',
                         help='select timeoutが発生する場合に画質を落とす')
     return parser.parse_args()
