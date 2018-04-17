@@ -8,6 +8,7 @@ import cv2
 import time
 import argparse
 
+import Tools.imgfunc as IMG
 import Tools.func as F
 
 
@@ -17,6 +18,8 @@ def command():
                         help='使用するWebカメラのチャンネル [default: 0]')
     parser.add_argument('-o', '--out_path', default='./capture/',
                         help='画像の保存先 (default: ./capture/)')
+    parser.add_argument('--img_rate', '-r', type=float, default=1,
+                        help='表示する画像サイズの倍率 [default: 1]')
     parser.add_argument('--lower', action='store_true',
                         help='select timeoutが発生する場合に画質を落とす')
     return parser.parse_args()
@@ -35,7 +38,7 @@ def main(args):
         # Capture frame-by-frame
         ret, frame = cap.read()
         if ret:
-            cv2.imshow('frame', frame)
+            cv2.imshow('frame', IMG.resize(frame, args.img_rate))
         else:
             time.sleep(2)
 
