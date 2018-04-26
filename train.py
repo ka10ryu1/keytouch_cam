@@ -5,6 +5,7 @@ help = '学習メイン部'
 #
 
 import os
+#import cv2
 import json
 import argparse
 import numpy as np
@@ -17,9 +18,10 @@ from chainer.training import extensions
 
 from Lib.network import KB
 from Lib.plot_report_log import PlotReportLog
-import Tools.imgfunc as IMG
+#import Tools.imgfunc as IMG
 import Tools.getfunc as GET
 import Tools.func as F
+from Lib.read_dataset_CV2 import LabeledImageDataset
 
 
 class Transform(chainer.dataset.DatasetMixin):
@@ -37,7 +39,8 @@ class Transform(chainer.dataset.DatasetMixin):
         # データセットのインデックスを受け取って、データを返します
         inputs = self._dataset[i]
         x, y = inputs
-        x = np.array([self._prepare(j) for j in x])
+        x = self._prepare(x)
+        print(x.shape, y)
         return x.astype(self._dtype), y.astype(self._dtype)
 
 
@@ -76,6 +79,16 @@ def command():
     return parser.parse_args()
 
 
+def getDataset(in_path):
+    train_path = os.path.join(in_path, 'train.txt')
+    train = LabeledImageDataset(train_path)
+    train = Transform(train, chainer.links.model.vision.resnet.prepare)
+    test_path = os.path.join(in_path, 'test.txt')
+    test = LabeledImageDataset(test_path)
+    test = Transform(test, chainer.links.model.vision.resnet.prepare)
+    return train, test
+
+
 def main(args):
 
     # 各種データをユニークな名前で保存するために時刻情報を取得する
@@ -107,28 +120,14 @@ def main(args):
     optimizer = GET.optimizer(args.optimizer).setup(model)
 
     # Load dataset
-    train_path = os.path.join(args.in_path, 'train.txt')
-    train = chainer.datasets.LabeledImageDataset(train_path)
-    train = Transform(train, chainer.links.model.vision.resnet.prepare)
-    test_path = os.path.join(args.in_path, 'test.txt')
-    test = chainer.datasets.LabeledImageDataset(test_path)
-    test = Transform(test, chainer.links.model.vision.resnet.prepare)
-
-    # predict.pyでモデルを決定する際に必要なので記憶しておく
-    model_param = {i: getattr(args, i) for i in dir(args) if not '_' in i[0]}
-    model_param['shape'] = train[0][0].shape
-
+    train, test = getDataset(args.in_path)
     train_iter = chainer.iterators.SerialIterator(train, args.batchsize)
     test_iter = chainer.iterators.SerialIterator(test, args.batchsize,
                                                  repeat=False, shuffle=False)
 
     # Set up a trainer
-    updater = training.StandardUpdater(
-        train_iter, optimizer, device=args.gpu_id
-    )
-    trainer = training.Trainer(
-        updater, (args.epoch, 'epoch'), out=args.out_path
-    )
+    updater = training.StandardUpdater(train_iter, optimizer, device=args.gpu_id)
+    trainer = training.Trainer(updater, (args.epoch, 'epoch'), out=args.out_path)
 
     # Evaluate the model with the test dataset for each epoch
     trainer.extend(extensions.Evaluator(test_iter, model, device=args.gpu_id))
@@ -182,6 +181,8 @@ def main(args):
         # Resume from a snapshot
         chainer.serializers.load_npz(args.resume, trainer)
 
+    # predict.pyでモデルを決定する際に必要なので記憶しておく
+    model_param = {i: getattr(args, i) for i in dir(args) if not '_' in i[0]}
     if args.only_check is False:
         # predict.pyでモデルのパラメータを読み込むjson形式で保存する
         with open(F.getFilePath(args.out_path, exec_time, '.json'), 'w') as f:

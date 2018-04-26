@@ -8,11 +8,19 @@ import os
 
 import numpy
 try:
-    from cv2 import imread
+    import cv2
     available = True
 except ImportError as e:
     available = False
     _import_error = e
+
+try:
+    from PIL import Image
+    available = True
+except ImportError as e:
+    available = False
+    _import_error = e
+
 import bisect
 import io
 import six
@@ -23,7 +31,8 @@ from chainer.dataset import dataset_mixin
 
 
 def _read_image_as_array(path, dtype):
-    f = imread(path)
+    f = cv2.imread(path)
+    f = Image.fromarray(cv2.cvtColor(f, cv2.COLOR_BGR2RGB))
     try:
         image = numpy.asarray(f, dtype=dtype)
     finally:
