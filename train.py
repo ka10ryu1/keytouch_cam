@@ -102,7 +102,7 @@ def main(args):
     actfun = GET.actfun(args.actfun)
     # モデルを決定する
     model = L.Classifier(
-        KB(n_unit=args.unit, n_out=6, base=L.ResNet50Layers(None),
+        KB(n_unit=args.unit, n_out=6, base=L.ResNet50Layers(),
            actfun=actfun, dropout=args.dropout,
            view=args.only_check),
         # lossfun=GET.lossfun(args.lossfun)
@@ -126,8 +126,10 @@ def main(args):
                                                  repeat=False, shuffle=False)
 
     # Set up a trainer
-    updater = training.StandardUpdater(train_iter, optimizer, device=args.gpu_id)
-    trainer = training.Trainer(updater, (args.epoch, 'epoch'), out=args.out_path)
+    updater = training.StandardUpdater(
+        train_iter, optimizer, device=args.gpu_id)
+    trainer = training.Trainer(
+        updater, (args.epoch, 'epoch'), out=args.out_path)
 
     # Evaluate the model with the test dataset for each epoch
     trainer.extend(extensions.Evaluator(test_iter, model, device=args.gpu_id))
