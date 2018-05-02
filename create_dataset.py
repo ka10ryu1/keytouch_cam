@@ -10,6 +10,7 @@ import argparse
 import numpy as np
 
 import Tools.func as F
+import Tools.getfunc as GET
 
 
 def command():
@@ -26,6 +27,8 @@ def command():
                         help='使用したい透視変換行列のパス ')
     parser.add_argument('--view', action='store_true',
                         help='cv2.imshow()で変換結果を表示する')
+    parser.add_argument('--get_h', action='store_true',
+                        help='透視変換行列を保存する')
     return parser.parse_args()
 
 
@@ -63,7 +66,7 @@ def alignImages(img1, img2,
         return img1, np.zeros((3, 3))
 
 
-def main(ref, cam, out_path, num, homography, view):
+def main(ref, cam, homography):
     # Read reference image
     ref_name = ref
     print('Reading reference image : ', ref_name)
@@ -87,25 +90,28 @@ def main(ref, cam, out_path, num, homography, view):
         dst = cv2.warpPerspective(ref, h, (width, height))
 
     print(time.time() - st)
-
-    # Write aligned image to disk.
-    outFileName = F.getFilePath(args.out_path, 'aligned_'+str(num).zfill(5), '.jpg')
-    print('Saving aligned image : ', outFileName)
-    cv2.imwrite(outFileName, dst)
-
-    # Print estimated homography
     print('Estimated homography : \n',  h)
-    outFileName = F.getFilePath(args.out_path, 'h_'+str(num).zfill(5), '.npz')
-    np.savez(outFileName, h=h)
-
-    if args.view:
-        cv2.imshow('view', dst)
-        cv2.waitKey()
+    return dst, h
 
 
 if __name__ == '__main__':
 
     args = command()
     F.argsPrint(args)
-    for i, cap in enumerate(args.cap_img):
-        main(args.ref_img, cap, args.out_path, i, args.homography, args.view)
+    data = [main(args.ref_img, cap, args.homography)
+            for cap in args.cap_img]
+
+    print('get img num:', len(data))
+
+    for i, h in data:
+        name = GET.datetimeSHA(GET.randomStr(10), str_len=12)
+        outFileName = F.getFilePath(args.out_path, name, '.jpg')
+        cv2.imwrite(outFileName, i)
+
+        if args.view:
+            cv2.imshow('view', i)
+            cv2.waitKey()
+
+        if args.get_h:
+            outFileName = F.getFilePath(args.out_path, name, '.npz')
+            np.savez(outFileName, h=h)
