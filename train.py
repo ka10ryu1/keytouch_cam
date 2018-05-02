@@ -25,10 +25,11 @@ from Lib.read_dataset_CV2 import LabeledImageDataset
 
 
 class Transform(chainer.dataset.DatasetMixin):
-    def __init__(self, dataset, prepare, dtype=np.float32):
+    def __init__(self, dataset, prepare, x_dtype=np.float32, y_dtype=np.int8):
         self._dataset = dataset
         self._prepare = prepare
-        self._dtype = dtype
+        self._x_dtype = x_dtype
+        self._y_dtype = y_dtype
         self._len = len(self._dataset)
 
     def __len__(self):
@@ -40,8 +41,7 @@ class Transform(chainer.dataset.DatasetMixin):
         inputs = self._dataset[i]
         x, y = inputs
         x = self._prepare(x)
-        print(x.shape, y)
-        return x.astype(self._dtype), y.astype(self._dtype)
+        return x.astype(self._x_dtype), y.astype(self._y_dtype)
 
 
 def command():
@@ -102,7 +102,7 @@ def main(args):
     actfun = GET.actfun(args.actfun)
     # モデルを決定する
     model = L.Classifier(
-        KB(n_unit=args.unit, n_out=6, base=L.ResNet50Layers(),
+        KB(n_unit=args.unit, n_out=4,
            actfun=actfun, dropout=args.dropout,
            view=args.only_check),
         # lossfun=GET.lossfun(args.lossfun)
