@@ -10,6 +10,7 @@ import argparse
 import numpy as np
 
 import Tools.func as F
+import Tools.imgfunc as IMG
 import Tools.getfunc as GET
 
 
@@ -99,7 +100,7 @@ if __name__ == '__main__':
     args = command()
     F.argsPrint(args)
     data = [main(args.ref_img, cap, args.homography)
-            for cap in args.cap_img]
+            for cap in args.cap_img if IMG.isImgPath(cap)]
 
     print('get img num:', len(data))
 
