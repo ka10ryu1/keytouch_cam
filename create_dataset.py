@@ -30,6 +30,8 @@ def command():
                         help='cv2.imshow()で変換結果を表示する')
     parser.add_argument('--get_h', action='store_true',
                         help='透視変換行列を保存する')
+    parser.add_argument('--random_rot', action='store_true',
+                        help='ランダムに回転を加えて画像を水増しする')
     return parser.parse_args()
 
 
@@ -67,7 +69,7 @@ def alignImages(img1, img2,
         return img1, np.zeros((3, 3))
 
 
-def main(ref, cam, homography):
+def main(ref, cam, homography, random_rot):
     # Read reference image
     ref_name = ref
     print('Reading reference image : ', ref_name)
@@ -77,6 +79,8 @@ def main(ref, cam, homography):
     img_name = cam
     print('Reading image to align : ', img_name)
     img = cv2.imread(img_name, cv2.IMREAD_COLOR)
+    if random_rot:
+        img, _ = IMG.rotateR(img, scale=1.0)
 
     print('Aligning images ...')
     # Registered image will be resotred in imReg.
@@ -99,7 +103,7 @@ if __name__ == '__main__':
 
     args = command()
     F.argsPrint(args)
-    data = [main(args.ref_img, cap, args.homography)
+    data = [main(args.ref_img, cap, args.homography, args.random_rot)
             for cap in args.cap_img if IMG.isImgPath(cap)]
 
     print('get img num:', len(data))
