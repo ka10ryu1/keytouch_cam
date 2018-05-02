@@ -5,16 +5,12 @@ help = 'データセットテキスト生成部分'
 #
 
 import os
-
-import cv2
-import time
 import argparse
 import numpy as np
+from glob import glob
 
 import Tools.func as F
 import Tools.imgfunc as IMG
-
-from glob import glob
 
 
 def command():
@@ -44,11 +40,25 @@ def writeTXT(folder, name, data):
         [f.write('./' + i + ' ' + j + '\n') for i, j in data]
 
 
+def str2int(in_str):
+    val = 0
+    try:
+        val = int(in_str)
+    except:
+        print('ERROR:', in_str)
+        val = -1
+
+    return val
+
+
 def main(args):
     # 画像データを探索し、画像データのパスと、サブディレクトリの値を格納する
-    search = os.path.join(args.img_root_path, '**')
-    data = [(img, int(img.split('/')[1])) for img in glob(search, recursive=True)
+    search = glob(os.path.join(args.img_root_path, '**'), recursive=True)
+    data = [(img, str2int(img.split('/')[1])) for img in search
             if IMG.isImgPath(img, True)]
+    # ラベルの数を数える
+    label_num = len(np.unique(np.array([i for _, i in data])))
+    print('label num: ', label_num)
     # 取得したデータをランダムに学習用とテスト用に分類する
     data_arr = np.array(data)
     data_len = len(data_arr)
@@ -57,8 +67,8 @@ def main(args):
     train = data_arr[shuffle[:train_size]]
     test = data_arr[shuffle[train_size:]]
     # chainer.datasets.LabeledImageDataset形式で出力する
-    writeTXT(args.out_path, 'train.txt', train)
-    writeTXT(args.out_path, 'test.txt', test)
+    writeTXT(args.out_path, 'train_' + str(label_num).zfill(3) + '.txt', train)
+    writeTXT(args.out_path, 'test_' + str(label_num).zfill(3) + '.txt', test)
 
 
 if __name__ == '__main__':
