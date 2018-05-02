@@ -5,7 +5,7 @@ help = '学習メイン部'
 #
 
 import os
-#import cv2
+# import cv2
 import json
 import argparse
 import numpy as np
@@ -18,7 +18,7 @@ from chainer.training import extensions
 
 from Lib.network import KB
 from Lib.plot_report_log import PlotReportLog
-#import Tools.imgfunc as IMG
+# import Tools.imgfunc as IMG
 import Tools.getfunc as GET
 import Tools.func as F
 from Lib.read_dataset_CV2 import LabeledImageDataset
@@ -79,35 +79,50 @@ def command():
     return parser.parse_args()
 
 
-def getDataset(in_path):
-    train_path = os.path.join(in_path, 'train.txt')
-    train = LabeledImageDataset(train_path)
-    train = Transform(train, chainer.links.model.vision.resnet.prepare)
-    test_path = os.path.join(in_path, 'test.txt')
-    test = LabeledImageDataset(test_path)
-    test = Transform(test, chainer.links.model.vision.resnet.prepare)
-    return train, test
+def getDataset(folder):
+
+    # 探索するフォルダがなければ終了
+    if not os.path.isdir(folder):
+        print('[Error] folder not found:', folder)
+        print(F.fileFuncLine())
+        exit()
+
+    # 学習用データとテスト用データを発見したらTrueにする
+    train_flg = False
+    test_flg = False
+    out_n = 0
+
+    for l in os.listdir(folder):
+        name, ext = os.path.splitext(os.path.basename(l))
+        if os.path.isdir(l):
+            pass
+        elif('train_' in name)and('.txt' in ext)and(train_flg is False):
+            train = LabeledImageDataset(os.path.join(folder, l))
+            train = Transform(train, chainer.links.model.vision.resnet.prepare)
+            train_flg = True
+            out_n = int(name.split('_')[1])
+        elif('test_' in name)and('.txt' in ext)and(test_flg is False):
+            test = LabeledImageDataset(os.path.join(folder, l))
+            test = Transform(test, chainer.links.model.vision.resnet.prepare)
+            test_flg = True
+            out_n = int(name.split('_')[1])
+
+    return train, test, out_n
 
 
 def main(args):
 
     # 各種データをユニークな名前で保存するために時刻情報を取得する
     exec_time = GET.datetimeSHA()
-
-    # Set up a neural network to train
-    # Classifier reports softmax cross entropy loss and accuracy at every
-    # iteration, which will be used by the PrintReport extension below.
-
+    # Load dataset
+    train, test, out_n = getDataset(args.in_path)
     # 活性化関数を取得する
     actfun = GET.actfun(args.actfun)
     # モデルを決定する
     model = L.Classifier(
-        KB(n_unit=args.unit, n_out=4,
-           actfun=actfun, dropout=args.dropout,
-           view=args.only_check),
+        KB(n_unit=args.unit, n_out=out_n, actfun=actfun, dropout=args.dropout, view=args.only_check),
         # lossfun=GET.lossfun(args.lossfun)
     )
-
     if args.gpu_id >= 0:
         # Make a specified GPU current
         chainer.backends.cuda.get_device_from_id(args.gpu_id).use()
@@ -118,13 +133,10 @@ def main(args):
 
     # Setup an optimizer
     optimizer = GET.optimizer(args.optimizer).setup(model)
-
-    # Load dataset
-    train, test = getDataset(args.in_path)
+    # Setup iterator
     train_iter = chainer.iterators.SerialIterator(train, args.batchsize)
     test_iter = chainer.iterators.SerialIterator(test, args.batchsize,
                                                  repeat=False, shuffle=False)
-
     # Set up a trainer
     updater = training.StandardUpdater(
         train_iter, optimizer, device=args.gpu_id)
@@ -158,6 +170,10 @@ def main(args):
                           'epoch', file_name='loss.png')
         )
 
+        trainer.extend(
+            extensions.PlotReport(['main/accuracy', 'validation/main/accuracy'],
+                                  'epoch', file_name='acc.png')
+        )
         # trainer.extend(
         #     PlotReportLog(['lr'],
         #                   'epoch', file_name='lr.png', val_pos=(-80, -60))
@@ -172,6 +188,8 @@ def main(args):
         'epoch',
         'main/loss',
         'validation/main/loss',
+        'main/accuracy',
+        'validation/main/accuracy',
         # 'lr',
         'elapsed_time'
     ]))
