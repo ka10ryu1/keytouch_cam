@@ -13,8 +13,8 @@ import chainer.links as L
 
 
 class KB(Chain):
-    def __init__(self, n_unit, n_out, base,
-                 layer=3, actfun=F.relu, dropout=0.0, view=False):
+    def __init__(self, n_unit, n_out, base=L.ResNet50Layers(),
+                 layer='pool5', actfun=F.relu, dropout=0.0, view=False):
         """
         [in] n_unit:    中間層のユニット数
         [in] n_out:     出力チャンネル
@@ -27,6 +27,7 @@ class KB(Chain):
             self.base = base
             self.fc = L.Linear(None, n_out)
 
+        self.layer = layer
         self.view = view
         self.timer = 0
 
@@ -37,17 +38,12 @@ class KB(Chain):
 
     def __call__(self, x):
 
-        print(x.shape)
-        exit()
-
-        h = self.base(x, layers=['fc7'])
-        y = self.fc(h['fc7'])
-        return y
+        # print(x.shape)
+        # print(self.base.available_layers)
+        h = self.base(x, layers=[self.layer])
+        return self.fc(h[self.layer])
         # if self.view:
         #     self.timer = time.time()
-
-        # h = x
-        # y = h
 
         # if self.view:
         #     print('Output {0:5.3f} s: {1}'.format(time.time()-self.timer, y.shape))
