@@ -20,6 +20,8 @@ def command():
                         help='使用する参照画像のパス')
     parser.add_argument('cap_img', nargs='+',
                         help='使用するキャプチャ画像のパス')
+    parser.add_argument('--img_rate', '-r', type=float, default=1,
+                        help='表示する画像サイズの倍率 [default: 1]')
     parser.add_argument('--train_per_all', '-t', type=float, default=0.9,
                         help='画像数に対する学習用画像の割合 [default: 0.9]')
     parser.add_argument('-o', '--out_path', default='./result/',
@@ -90,9 +92,9 @@ def main(ref, cam, homography, random_rot):
         dst, h = alignImages(ref, img)
     else:
         arr = np.load(args.homography)
-        height, width, channels = img.shape
+        height, width, channels = ref.shape
         h = arr['h']
-        dst = cv2.warpPerspective(ref, h, (width, height))
+        dst = cv2.warpPerspective(img, h, (width, height))
 
     print(time.time() - st)
     print('Estimated homography : \n',  h)
@@ -114,7 +116,7 @@ if __name__ == '__main__':
         cv2.imwrite(outFileName, i)
 
         if args.view:
-            cv2.imshow('view', i)
+            cv2.imshow('view', IMG.resize(i, args.img_rate))
             cv2.waitKey()
 
         if args.get_h:
